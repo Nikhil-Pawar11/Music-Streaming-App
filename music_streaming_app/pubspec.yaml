@@ -1,0 +1,40 @@
+name: music_streaming_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  carousel_slider: ^5.0.0
+  flutter_animate: ^4.5.0
+  firebase_core: ^3.6.0  # Core library for Firebase
+  firebase_storage: ^12.3.2  # To access Firebase Storage
+  just_audio: ^0.9.40  # For audio playback
+  flutterfire_cli: ^0.1.1+2
+  google_fonts: ^5.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0  # Updated to the latest version
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/song1.jpg
+    - assets/song2.jpg
+    - assets/song3.jpg  
+    - assets/song4.jpg
+    - assets/song5.jpg
+    - assets/song6.jpg 
+    - assets/song7.jpg
+    - assets/song8.jpg 
+    - assets/song9.jpg
+    - assets/song10.jpg 
