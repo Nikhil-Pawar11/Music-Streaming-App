@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Music Streaming App 🎵
 
 A Flutter-based music streaming app that allows you to listen to songs directly from Firebase Storage. The app features a modern UI, carousel sliders for songs, and a creative bottom card list for easy selection.
@@ -152,6 +152,4 @@ Feel free to fork this repository and contribute by submitting a pull request. A
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-=======
-# music_streaming_app
->>>>>>> 6b89a83f2ed759e597169cb3041c05dda72cd1d6
+
