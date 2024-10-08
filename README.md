@@ -117,7 +117,7 @@ Ensure you have an Android emulator or a physical device connected.
 ### Music Player
 
 <p align="center">
-    <img src="images/screenshot.png" alt="Dashboard Screenshot" width="40%" />
+    <img src="images/Screenshot.png" alt="App Screenshot" width="40%" />
 </p>
 
 
