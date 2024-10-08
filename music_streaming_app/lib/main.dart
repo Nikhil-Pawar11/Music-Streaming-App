@@ -1,125 +1,377 @@
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Import the firebase_options.dart file
+import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MusicStreamingApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MusicStreamingApp extends StatelessWidget {
+  const MusicStreamingApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Music Streaming',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        textTheme: GoogleFonts.poppinsTextTheme(),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MusicScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MusicScreen extends StatefulWidget {
+  const MusicScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MusicScreenState createState() => _MusicScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MusicScreenState extends State<MusicScreen> {
+  int _currentSongIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  // Sample song data
+  final List<String> songImages = [
+    'assets/song1.jpg',
+    'assets/song2.jpg',
+    'assets/song3.jpg',
+    'assets/song4.jpg',
+    'assets/song5.jpg',
+    'assets/song6.jpg',
+    'assets/song7.jpg',
+    'assets/song8.jpg',
+    'assets/song9.jpg',
+    'assets/song10.jpg',
+  ];
+
+  // Song and artist names
+  final List<String> songNames = [
+    'Creative',
+    'Forest',
+    'Happy',
+    'Lazy',
+    'Lofi',
+    'Nature',
+    'Nightfall',
+    'Radiant',
+    'Twilight',
+    'Song 10'
+  ];
+
+  final List<String> artistNames = [
+    'Artist 1',
+    'Artist 2',
+    'Artist 3',
+    'Artist 4',
+    'Artist 5',
+    'Artist 6',
+    'Artist 7',
+    'Artist 8',
+    'Artist 9',
+    'Artist 10'
+  ];
+
+  // Firebase Storage paths
+  final List<String> songFiles = [
+    'creative.mp3',
+    'forest.mp3',
+    'happy.mp3',
+    'lazy.mp3',
+    'lofi.mp3',
+    'nature.mp3',
+    'nightfall.mp3',
+    'radiant.mp3',
+    'twilight.mp3'
+  ];
+
+  List<String> songUrls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSongUrls();
+    _audioPlayer.durationStream.listen((duration) {
+      setState(() {
+        _duration = duration ?? Duration.zero;
+      });
     });
+    _audioPlayer.positionStream.listen((position) {
+      setState(() {
+        _position = position;
+      });
+    });
+  }
+
+  Future<void> _fetchSongUrls() async {
+    FirebaseStorage storage = FirebaseStorage.instance;
+    List<String> urls = [];
+    for (String fileName in songFiles) {
+      try {
+        String url = await storage.ref(fileName).getDownloadURL();
+        urls.add(url);
+      } catch (e) {
+        print("Error fetching URL for $fileName: $e");
+      }
+    }
+
+    setState(() {
+      songUrls = urls;
+    });
+  }
+
+  void _playSong(int index) async {
+    if (songUrls.isNotEmpty) {
+      await _audioPlayer.setUrl(songUrls[index]);
+      _audioPlayer.play();
+    }
+  }
+
+  void _pauseSong() {
+    _audioPlayer.pause();
+  }
+
+  void _stopSong() {
+    _audioPlayer.stop();
+  }
+
+  void _nextSong() {
+    if (_currentSongIndex < songUrls.length - 1) {
+      setState(() {
+        _currentSongIndex++;
+      });
+      _playSong(_currentSongIndex);
+    }
+  }
+
+  void _previousSong() {
+    if (_currentSongIndex > 0) {
+      setState(() {
+        _currentSongIndex--;
+      });
+      _playSong(_currentSongIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Music Streaming',
+          style: TextStyle(color: Colors.white),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFE1BEE7), Color(0xFFFFFFFF)], // Gradient
+          ),
+        ),
+        child: songUrls.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // Cards at the top
+                  Expanded(
+                    child: CarouselSlider.builder(
+                      itemCount: songImages.length,
+                      itemBuilder:
+                          (BuildContext context, int index, int realIndex) {
+                        return Container(
+                          margin: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8.0,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12.0),
+                            child: Image.asset(
+                              songImages[_currentSongIndex],
+                              fit: BoxFit.cover,
+                              width: MediaQuery.of(context).size.width,
+                              height: 300,
+                            ).animate().scale(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                ),
+                          ),
+                        );
+                      },
+                      options: CarouselOptions(
+                        height: 300.0,
+                        enlargeCenterPage: true,
+                        autoPlay: false,
+                        onPageChanged: (index, reason) {
+                          setState(() {
+                            _currentSongIndex = index;
+                          });
+                          _playSong(index);
+                        },
+                      ),
+                    ),
+                  ),
+                  // Displaying song name and artist name
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          songNames[_currentSongIndex],
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          artistNames[_currentSongIndex],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Song controls and duration
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous),
+                        onPressed: _previousSong,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow),
+                        onPressed: () => _playSong(_currentSongIndex),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.pause),
+                        onPressed: _pauseSong,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.stop),
+                        onPressed: _stopSong,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next),
+                        onPressed: _nextSong,
+                      ),
+                    ],
+                  ),
+                  // Displaying song duration and position
+                  Slider(
+                    value: _position.inSeconds.toDouble(),
+                    min: 0,
+                    max: _duration.inSeconds.toDouble(),
+                    onChanged: (value) {
+                      final newPosition = Duration(seconds: value.toInt());
+                      _audioPlayer.seek(newPosition);
+                    },
+                  ),
+                  Text(
+                    "${_position.toString().split('.').first} / ${_duration.toString().split('.').first}",
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  // Cards list at the bottom
+                  Container(
+                    height: 150,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Scrollbar(
+                      controller: _scrollController,
+                      thumbVisibility: true,
+                      thickness: 6.0,
+                      radius: const Radius.circular(10),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: songImages.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          bool isSelected = _currentSongIndex == index;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _currentSongIndex = index;
+                              });
+                              _playSong(index);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12.0),
+                                color: isSelected
+                                    ? const Color.fromARGB(255, 223, 163, 243)
+                                    : Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8.0,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              width: 100,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: Column(
+                                  children: [
+                                    Image.asset(
+                                      songImages[index],
+                                      fit: BoxFit.cover,
+                                      height: 100,
+                                      width: 100,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      songNames[index],
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }
